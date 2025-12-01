@@ -41,11 +41,21 @@ import kotlinx.coroutines.delay
 import java.time.temporal.ChronoUnit
 import kotlin.math.roundToInt
 
+import androidx.compose.ui.tooling.preview.Preview
+
 @OptIn(ExperimentalTextApi::class)
 @Composable
 fun TimelineScreen() {
     val timelineState = rememberTimelineState()
     var showOverlay by remember { mutableStateOf(true) }
+    // ... (rest of the code)
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TimelineScreenPreview() {
+    TimelineScreen()
+}
 
     // Constants
     val stages = Stage.values()
