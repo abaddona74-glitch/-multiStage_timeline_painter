@@ -35,27 +35,18 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import java.time.temporal.ChronoUnit
 import kotlin.math.roundToInt
 
-import androidx.compose.ui.tooling.preview.Preview
-
 @OptIn(ExperimentalTextApi::class)
 @Composable
 fun TimelineScreen() {
     val timelineState = rememberTimelineState()
     var showOverlay by remember { mutableStateOf(true) }
-    // ... (rest of the code)
-}
-
-@Preview(showBackground = true)
-@Composable
-fun TimelineScreenPreview() {
-    TimelineScreen()
-}
 
     // Constants
     val stages = Stage.values()
@@ -66,8 +57,8 @@ fun TimelineScreenPreview() {
     // Dimensions
     val baseHourHeight = 100f
     val stageHeaderHeight = 60f
-    val timeColumnWidth = 50f 
-    val topBarHeight = 80.dp // For "Festival Schedule" title
+    val timeColumnWidth = 80f // Increased from 50f to prevent overlap
+    // Removed topBarHeight as title is removed
 
     // Colors (Light / Cream Theme)
     val creamBackground = Color(0xFFFFFBF2)
@@ -86,22 +77,7 @@ fun TimelineScreenPreview() {
             .fillMaxSize()
             .background(creamBackground)
     ) {
-        // Top Title
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(topBarHeight)
-                .padding(start = 24.dp, bottom = 8.dp),
-            contentAlignment = Alignment.BottomStart
-        ) {
-            Text(
-                text = "Festival Schedule",
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF5D4037) // Slightly lighter brown for title
-                )
-            )
-        }
+        // Removed "Festival Schedule" Title Box
 
         // Timeline Area
         BoxWithConstraints(
@@ -329,5 +305,11 @@ fun TimelineScreenPreview() {
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TimelineScreenPreview() {
+    TimelineScreen()
 }
 
