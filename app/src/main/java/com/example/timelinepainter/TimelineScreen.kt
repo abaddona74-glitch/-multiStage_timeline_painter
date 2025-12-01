@@ -61,27 +61,24 @@ fun TimelineScreen() {
     val gridTopMargin = 28.dp
     val timeColumnWidth = 44.dp
     val timeColumnLeftPadding = 12.dp
-    // Removed topBarHeight as title is removed
 
-    // Colors (Light / Cream Theme)
-    val creamBackground = Color(0xFFFFFFF0) // Surface
-    val darkBrownText = Color(0xFF421E17) // Text-Primary
-    val gridLineColor = Color(0xFFE8DBC3) // Outline
-    val timeLabelColor = Color(0xFF786B68) // Text-Secondary
-    val overlayColor = Color(0xBF221513) // Overlay (75% alpha)
+    // Colors
+    val creamBackground = Color(0xFFFFFFF0)
+    val darkBrownText = Color(0xFF421E17)
+    val gridLineColor = Color(0xFFE8DBC3)
+    val timeLabelColor = Color(0xFF786B68)
+    val overlayColor = Color(0xBF221513)
 
     LaunchedEffect(Unit) {
         delay(2500)
         showOverlay = false
     }
 
-    // ИСПРАВЛЕНИЕ: Оборачиваем все в Box для управления слоями
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(creamBackground)
     ) {
-        // --- Слой с контентом (Временная шкала) ---
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -98,7 +95,6 @@ fun TimelineScreen() {
                     .padding(start = 20.dp, top = 20.dp, bottom = 16.dp)
             )
 
-            // Timeline Area
             BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxSize()
@@ -111,11 +107,10 @@ fun TimelineScreen() {
                 val baseHourHeightPx = with(density) { baseHourHeight.toPx() }
                 val stageHeaderHeightPx = with(density) { stageHeaderHeight.toPx() }
                 val gridTopMarginPx = with(density) { gridTopMargin.toPx() }
-                val timeColumnWidthPx = with(density) { timeColumnWidth.toPx() }
+                val timeColumnWidthPx = with(density) { (12.dp + (32.dp * timelineState.zoom)).toPx() }
 
                 val baseColumnWidth = (screenWidth - timeColumnWidthPx) / stages.size
 
-                // Zoomed Dimensions
                 val currentColumnWidth = baseColumnWidth * timelineState.zoom
                 val currentHourHeight = baseHourHeightPx * timelineState.zoom
 
@@ -128,23 +123,32 @@ fun TimelineScreen() {
                     modifier = Modifier
                         .fillMaxSize()
                         .pointerInput(Unit) {
-                            detectTransformGestures { _, pan, zoomChange, _ ->
-                                timelineState.transform(
-                                    panChange = pan,
-                                    zoomChange = zoomChange,
-                                    containerSize = Size(screenWidth, screenHeight),
-                                    contentSize = Size(totalContentWidthUnzoomed, totalContentHeightUnzoomed)
-                                )
+                            detectTransformGestures(
+                                onGesture = { _, pan, zoomChange, _ ->
+                                    timelineState.transform(
+                                        panChange = pan,
+                                        zoomChange = zoomChange,
+                                        containerSize = Size(screenWidth, screenHeight),
+                                        contentSize = Size(totalContentWidthUnzoomed, totalContentHeightUnzoomed)
+                                    )
+                                }
+                            )
+                        }
+                        .pointerInput(Unit) {
+                            awaitPointerEventScope {
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    if (event.changes.all { !it.pressed }) {
+                                        timelineState.onInteractionEnd()
+                                    }
+                                }
                             }
                         }
                 ) {
                     Canvas(modifier = Modifier.fillMaxSize()) {
                         clipRect {
-                            // Content Layer (Scrolled)
                             withTransform({ translate(left = timelineState.offsetX, top = timelineState.offsetY) }) {
 
-                                // 1. Grid Lines (Horizontal)
-                                // Draw lines every 30 minutes (2 lines per hour)
                                 val totalHalfHours = totalHours * 2
                                 for (i in 0..totalHalfHours) {
                                     val y = stageHeaderHeightPx + gridTopMarginPx + (i * (currentHourHeight / 2))
@@ -156,7 +160,6 @@ fun TimelineScreen() {
                                     )
                                 }
 
-                                // 2. Grid Lines (Vertical)
                                 stages.forEachIndexed { index, _ ->
                                     val x = timeColumnWidthPx + (index * currentColumnWidth)
                                     drawLine(
@@ -166,7 +169,6 @@ fun TimelineScreen() {
                                         strokeWidth = 1f
                                     )
                                 }
-                                // Last vertical line
                                 val lastX = timeColumnWidthPx + (stages.size * currentColumnWidth)
                                 drawLine(
                                     color = gridLineColor,
@@ -175,7 +177,6 @@ fun TimelineScreen() {
                                     strokeWidth = 1f
                                 )
 
-                                // 3. Events
                                 sampleEvents.forEach { event ->
                                     val stageIndex = stages.indexOf(event.stage)
                                     if (stageIndex != -1) {
@@ -194,7 +195,6 @@ fun TimelineScreen() {
                                         val eventRectSize = Size(width - 2 * padding, height - 2 * padding)
                                         val eventTopLeft = Offset(x + padding, y + padding)
 
-                                        // Event Card
                                         drawRoundRect(
                                             color = event.color,
                                             topLeft = eventTopLeft,
@@ -202,7 +202,6 @@ fun TimelineScreen() {
                                             cornerRadius = CornerRadius(6f * timelineState.zoom)
                                         )
 
-                                        // Text
                                         clipRect(
                                             left = eventTopLeft.x,
                                             top = eventTopLeft.y,
@@ -240,7 +239,6 @@ fun TimelineScreen() {
                                 }
                             }
 
-                            // Sticky Headers (Stages) - X scrolls, Y fixed
                             drawRect(
                                 color = creamBackground,
                                 topLeft = Offset(0f, 0f),
@@ -270,7 +268,6 @@ fun TimelineScreen() {
                                 }
                             }
 
-                            // Sticky Time Column - Y scrolls, X fixed
                             drawRect(
                                 color = creamBackground,
                                 topLeft = Offset(0f, stageHeaderHeightPx),
@@ -294,13 +291,12 @@ fun TimelineScreen() {
                                         textResult,
                                         topLeft = Offset(
                                             timeColumnLeftPaddingPx,
-                                            y - (textResult.size.height / 2) // Aligned with the line
+                                            y - (textResult.size.height / 2)
                                         )
                                     )
                                 }
                             }
 
-                            // Corner Cover
                             drawRect(
                                 color = creamBackground,
                                 topLeft = Offset(0f, 0f),
@@ -309,52 +305,73 @@ fun TimelineScreen() {
                         }
                     }
                 }
-            }
-        }
 
-        // --- Слой с подсказкой (Оверлей) ---
-        // ИСПРАВЛЕНИЕ: AnimatedVisibility теперь находится в Box и не конфликтует по скоупу
-        AnimatedVisibility(
-            visible = showOverlay,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(overlayColor),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Pinch to Zoom",
-                    color = Color.White,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
+                // Overlay (Pinch to Zoom)
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = showOverlay,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = stageHeaderHeight)
+                            .background(overlayColor),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Pinch to Zoom",
+                            color = Color.White,
+                            style = TextStyle(
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    }
+                }
             }
         }
 
         // Zoom Indicator
-        Box(
+        var showZoomIndicator by remember { mutableStateOf(false) }
+        
+        LaunchedEffect(timelineState.isZooming) {
+            if (timelineState.isZooming) {
+                showZoomIndicator = true
+            } else {
+                delay(1500)
+                showZoomIndicator = false
+            }
+        }
+
+        AnimatedVisibility(
+            visible = showZoomIndicator,
+            enter = fadeIn(),
+            exit = fadeOut(),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 12.dp)
-                .size(width = 108.dp, height = 32.dp)
-                .background(
-                    color = Color(0xBF221513),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
-                ),
-            contentAlignment = Alignment.Center
         ) {
-            val zoomPercent = (timelineState.zoom * 10).roundToInt() * 10
-            Text(
-                text = "Zoom: $zoomPercent%",
-                style = TextStyle(
-                    fontSize = 14.sp,
-                    color = Color(0xFFFFFFF0),
-                    fontWeight = FontWeight.Medium
+            Box(
+                modifier = Modifier
+                    .size(width = 108.dp, height = 32.dp)
+                    .background(
+                        color = Color(0xBF221513),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                    )
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                val zoomPercent = (timelineState.zoom * 10).roundToInt() * 10
+                Text(
+                    text = "Zoom: $zoomPercent%",
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        color = Color(0xFFFFFFF0),
+                        fontWeight = FontWeight.Medium
+                    )
                 )
-            )
+            }
         }
     }
 }

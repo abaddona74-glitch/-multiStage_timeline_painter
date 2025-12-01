@@ -4,9 +4,9 @@ import androidx.compose.ui.graphics.Color
 import java.time.LocalTime
 
 enum class Stage(val displayName: String, val color: Color) {
-    Main("Main", Color(0xFFEC9C50)),   // Orange
-    Rock("Rock", Color(0xFFEEB7FA)),   // Purple (Brand)
-    Electro("Electro", Color(0xFFDFE26F)) // Lime
+    Main("Main", Color(0xFFEC9C50)),
+    Rock("Rock", Color(0xFFEEB7FA)),
+    Electro("Electro", Color(0xFFDFE26F))
 }
 
 data class FestivalEvent(
